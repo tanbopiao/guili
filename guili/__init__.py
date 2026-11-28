@@ -40,3 +40,9 @@ class Guili(_LegacyGuili):
     def ledger(self):
         """册：援引台账汇总——何例多用、何例闲置。"""
         return self._ce.summary()
+
+    def ledger_digest(self):
+        """台账快照哈希：先例内容被篡改即对不上，留痕防篡改。"""
+        import hashlib, json
+        raw = json.dumps(self.precedents, ensure_ascii=False, sort_keys=True)
+        return hashlib.sha256(raw.encode()).hexdigest()[:16]

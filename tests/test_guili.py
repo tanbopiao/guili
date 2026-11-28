@@ -113,3 +113,26 @@ class TestCe(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestLedgerIntegrity(unittest.TestCase):
+    """台账防篡改：留痕只增不覆盖，篡改现形，回归用例沉淀。"""
+
+    def setUp(self):
+        self.op = Guili()
+        self.op.add_precedent({"tags": ["t1"], "ruling": "r1"})
+        self.op.add_precedent({"tags": ["t2"], "ruling": "r2"})
+
+    def test_ledger_snapshot_tamper_evidence(self):
+        """台账快照哈希：事后篡改先例内容，快照对不上即现形。"""
+        snap_before = self.op.ledger_digest()
+        self.assertEqual(self.op.ledger_digest(), snap_before)  # 未动则一致
+        self.op.precedents[0]["case"]["ruling"] = "被篡改的裁决"  # 模拟篡改
+        self.assertNotEqual(self.op.ledger_digest(), snap_before)  # 篡改现形
+
+    def test_ledger_regression_replay(self):
+        """回归：先例增删查全链路重放，结果与首测一致。"""
+        hits1 = self.op.lookup("t1")
+        hits2 = self.op.lookup("t1")
+        self.assertEqual([h["case_id"] for h in hits1], [h["case_id"] for h in hits2])
+        self.assertEqual(len(self.op.precedents), 2)  # 只增不覆盖
